@@ -17,7 +17,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1/"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 class PlaylistRequestView(CreateAPIView):
     queryset = PlaylistRequest.objects.all()
