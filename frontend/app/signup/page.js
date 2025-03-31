@@ -34,7 +34,7 @@ export default function Signup() {
       }
 
       const data = await response.json();
-      router.push("/login");
+      router.push("/login"); // Redirect to login after signup
     } catch (err) {
       setError(err.message);
     }
@@ -94,6 +94,18 @@ export default function Signup() {
             </button>
           </div>
         </form>
+
+        {/* Link to Spotify Sign Up page */}
+        <p className="text-sm mt-3 text-center">
+          Want to sign up with Spotify?{" "}
+          <a
+            href="https://accounts.spotify.com/en/signup"
+            target="_blank"
+            className="text-green-400 hover:underline"
+          >
+            Sign up with Spotify
+          </a>
+        </p>
 
         {/* Link to login page */}
         <p className="text-sm mt-3 text-center">
