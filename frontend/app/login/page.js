@@ -1,8 +1,7 @@
-"use client"; 
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
 
 export default function Login() {
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -16,28 +15,28 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Submitting login...");
-  
+
     setError(null);
-  
+
     try {
       const response = await fetch("http://localhost:8000/auth/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(data.detail || "Login failed");
       }
-  
-      console.log("Login success:", data); 
-  
+
+      console.log("Login success:", data);
+
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
-  
-      router.push("/"); 
+
+      router.push("/");
     } catch (err) {
       setError(err.message);
     }
@@ -47,7 +46,9 @@ export default function Login() {
     <div className="flex justify-center items-center h-screen bg-gradient-to-br from-green-600 to-black p-4">
       <div className="bg-black/80 border border-[#1a1a1a] p-8 rounded-xl shadow-lg w-80 text-white">
         <h2 className="text-2xl font-bold mb-4 text-center">Log in</h2>
-        {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
+        )}
 
         <form onSubmit={handleSubmit}>
           <input
