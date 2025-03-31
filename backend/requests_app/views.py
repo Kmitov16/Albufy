@@ -28,7 +28,7 @@ class PlaylistRequestView(CreateAPIView):
         playlist_request = serializer.save(user=self.request.user)
 
         # Generate recommendations based on the description and the 5 songs
-        recommendations = self.generate_recommendations(
+        recommendations = self.post(
             playlist_request.song_ids, playlist_request.description
         )
 
@@ -37,7 +37,9 @@ class PlaylistRequestView(CreateAPIView):
         playlist_request.song_ids = final_playlist
         playlist_request.save()
 
-    def generate_recommendations(self, song_ids, description):
+    def post(self, request):
+        description = request.data.get("description")
+        song_ids = request.data.get("song_ids")
         """Uses OpenAI API to recommend songs based on user selection + description."""
         song_list = ", ".join(song_ids)
         prompt = (
