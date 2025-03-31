@@ -10,49 +10,53 @@ export default function SpotifySearch() {
   const [accessToken, setAccessToken] = useState("");
 
   async function handleButtonClick() {
-    if (selectedSongs.size === 0) {
-      console.log("No songs selected!");
+    if (selectedSongs.size !== 5) {
+      console.log("Please select exactly 5 songs.");
       return;
     }
-
-    const selectedSongIds = Array.from(selectedSongs); // Convert Set to Array
+  
+    const selectedSongIds = Array.from(selectedSongs);
     const authToken = localStorage.getItem("access");
-    console.log("Retrieved Token:", authToken); // Debugging step
-    // Retrieve the stored auth token
-
+  
     if (!authToken) {
       console.error("No authentication token found!");
       return;
     }
-
-    // Prepare data for the request
+  
+    const description = localStorage.getItem("playlist_description"); // Store this from the description page
+  
+    if (!description) {
+      console.error("No description found!");
+      return;
+    }
+  
+    // Prepare data for request
     const data = {
-      song_ids: selectedSongIds, // Send selected song IDs
+      song_ids: selectedSongIds,
+      description: description,
     };
-
+  
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/playlist-request/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`, // Attach token here
-          },
-          body: JSON.stringify(data),
-        }
-      );
-
+      const response = await fetch("http://127.0.0.1:8000/api/playlist-request/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(data),
+      });
+  
       const responseData = await response.json();
       if (response.ok) {
-        console.log("Songs sent successfully:", responseData);
+        console.log("Songs and description sent successfully:", responseData);
       } else {
-        console.error("Error sending songs:", responseData);
+        console.error("Error sending data:", responseData);
       }
     } catch (error) {
       console.error("Error in request:", error);
     }
   }
+  
 
   // Fetch Access Token from Spotify
   async function getAccessToken() {

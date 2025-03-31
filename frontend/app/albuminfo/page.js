@@ -1,36 +1,58 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function PlaylistForm() {
-  const [description, setDescription] = useState(""); // For capturing the playlist description input
-  const [loading, setLoading] = useState(false); // To track the loading state during API call
-  const [playlistLink, setPlaylistLink] = useState(""); // To store the generated playlist link after success
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [finalPlaylist, setFinalPlaylist] = useState([]);
 
-  // Handle form submission and send description to the backend
+  useEffect(() => {
+    // Fetch selected songs from local storage (set in the previous step)
+    const storedSongs = localStorage.getItem("selected_songs");
+    if (storedSongs) {
+      setFinalPlaylist(JSON.parse(storedSongs));
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
-    setLoading(true); // Set loading to true to indicate that the request is in progress
+    e.preventDefault();
+    setLoading(true);
 
-    // Make the POST request to the backend API
-    const res = await fetch("http://localhost:8000/api/create-playlist/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json", // Content-Type is application/json
-      },
-      body: JSON.stringify({ description }), // Send the description in the request body as JSON
-    });
-
-    // Parse the JSON response from the backend
-    const data = await res.json();
-
-    // If successful, store the playlist URL to display the link
-    if (res.ok) {
-      setPlaylistLink(data.playlist_url);
-    } else {
-      console.error("Error creating playlist:", data); // Error handling in case of failure
+    const authToken = localStorage.getItem("access"); // User authentication token
+    if (!authToken) {
+      console.error("User is not authenticated.");
+      setLoading(false);
+      return;
     }
 
-    setLoading(false); // Set loading to false after the request is complete
+    // Prepare request body
+    const data = {
+      song_ids: finalPlaylist, // Send the selected song IDs
+      description: description, // Send the description
+    };
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/playlist-request/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await res.json();
+      if (res.ok) {
+        console.log("Generated Playlist:", responseData.song_ids);
+        setFinalPlaylist(responseData.song_ids); // Store AI-generated playlist
+      } else {
+        console.error("Error generating playlist:", responseData);
+      }
+    } catch (error) {
+      console.error("Request failed:", error);
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -40,36 +62,32 @@ export default function PlaylistForm() {
           Create a Spotify Playlist
         </h2>
 
-        {/* Form to submit playlist description */}
         <form onSubmit={handleSubmit}>
-          {/* Input field to enter playlist description */}
           <input
             className="w-full bg-black/70 p-4 text-white rounded-lg border border-gray-900 mb-4"
             type="text"
             placeholder="Describe your playlist..."
             value={description}
-            onChange={(e) => setDescription(e.target.value)} // Update the description state as the user types
+            onChange={(e) => setDescription(e.target.value)}
           />
-
-          {/* Submit button to create the playlist */}
           <button
             type="submit"
-            disabled={loading} // Disable the button when loading
+            disabled={loading}
             className="w-full px-6 cursor-pointer py-3 bg-green-700 text-white rounded-lg hover:bg-green-600 transition duration-300 disabled:opacity-50"
           >
             {loading ? "Creating..." : "Generate Playlist"}
           </button>
         </form>
 
-        {/* Display the playlist link after the request is successful */}
-        {playlistLink && (
-          <a
-            href={playlistLink}
-            target="_blank"
-            className="block text-center text-green-500 mt-4 hover:underline"
-          >
-            View Playlist
-          </a>
+        {finalPlaylist.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-xl text-white text-center">Your Final Playlist</h3>
+            <ul className="text-white text-center mt-2">
+              {finalPlaylist.map((songId, index) => (
+                <li key={index} className="py-1">{songId}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </div>
