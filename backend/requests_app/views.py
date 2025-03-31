@@ -1,4 +1,5 @@
 import requests
+import os
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,6 +11,9 @@ from rest_framework.generics import CreateAPIView
 from .models import PlaylistRequest
 from .serializers import PlaylistRequestSerializer
 
+SPOTIFY_CLIENT_SECRET = os.getenv("NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET")
+SPOTIFY_CLIENT_ID = os.getenv("NEXT_PUBLIC_SPOTIFY_CLIENT_ID")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1/"
@@ -56,7 +60,7 @@ class SpotifyLoginView(APIView):
         """Generates the Spotify login URL."""
         scope = "playlist-modify-public playlist-modify-private"
         auth_url = (
-            f"{SPOTIFY_AUTH_URL}?client_id={settings.SPOTIFY_CLIENT_ID}"
+            f"{SPOTIFY_AUTH_URL}?client_id={SPOTIFY_CLIENT_ID}"
             f"&response_type=code&redirect_uri={settings.SPOTIFY_REDIRECT_URI}"
             f"&scope={scope}"
         )
@@ -76,7 +80,7 @@ class SpotifyCallbackView(APIView):
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": settings.SPOTIFY_REDIRECT_URI,
-            "client_id": settings.SPOTIFY_CLIENT_ID,
+            "client_id": SPOTIFY_CLIENT_ID,
             "client_secret": settings.SPOTIFY_CLIENT_SECRET,
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
