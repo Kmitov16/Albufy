@@ -20,22 +20,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
 
 class CustomTokenObtainSerializer(TokenObtainPairSerializer):
-    username_field = "username"  # Change to email-based login
+    username_field = "username"  # Keep it as username if frontend uses username
 
     def validate(self, attrs):
-        username = attrs.get("username")  # Input field "username" (email)
+        username = attrs.get("username")  
         password = attrs.get("password")
 
-        # Get user by email instead of username
         try:
             user = User.objects.get(username=username)
-            attrs["username"] = user.username  # Replace email with actual username
-        except UserProfile.DoesNotExist:
+            attrs["username"] = user.username  # Ensure correct username
+        except User.DoesNotExist:
             raise serializers.ValidationError("Invalid username or password")
 
         return super().validate(attrs)
 
-# serializers.py
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 

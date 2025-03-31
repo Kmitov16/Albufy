@@ -17,6 +17,17 @@ export default function Home() {
             Sign up
           </button>
         </Link>
+        <button
+          onClick={() => {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            localStorage.removeItem("user");
+            window.location.href = "/login";
+          }}
+          className=" px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300"
+        >
+          Logout
+        </button>
       </div>
 
       {/* Main Content */}

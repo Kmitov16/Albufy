@@ -16,10 +16,18 @@ export default function SpotifySearch() {
     }
 
     const selectedSongIds = Array.from(selectedSongs); // Convert Set to Array
+    const authToken = localStorage.getItem("access");
+    console.log("Retrieved Token:", authToken); // Debugging step
+    // Retrieve the stored auth token
+
+    if (!authToken) {
+      console.error("No authentication token found!");
+      return;
+    }
 
     // Prepare data for the request
     const data = {
-      song_ids: selectedSongIds, // Send selected song IDs (or any other data you need)
+      song_ids: selectedSongIds, // Send selected song IDs
     };
 
     try {
@@ -29,6 +37,7 @@ export default function SpotifySearch() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`, // Attach token here
           },
           body: JSON.stringify(data),
         }

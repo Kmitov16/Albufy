@@ -3,8 +3,8 @@ from django.contrib.auth.models import User
 
 class PlaylistRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    song_ids = models.JSONField()  # Store list of 5 Spotify song IDs
-    description = models.TextField()
+    song_ids = models.JSONField(blank=True)  # Store list of 5 Spotify song IDs
+    description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

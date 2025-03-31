@@ -90,7 +90,29 @@ class SpotifyCallbackView(APIView):
         response = requests.post(SPOTIFY_TOKEN_URL, data=data, headers=headers)
         token_info = response.json()
 
-        return Response(token_info)
+        if "access_token" not in token_info:
+            return Response({"error": "Invalid token response"}, status=400)
+
+        access_token = token_info["access_token"]
+
+        # Get user profile from Spotify
+        user_headers = {"Authorization": f"Bearer {access_token}"}
+        user_resp = requests.get(SPOTIFY_API_BASE_URL + "me", headers=user_headers)
+        user_info = user_resp.json()
+
+        return Response({
+            "access_token": access_token,
+            "refresh_token": token_info.get("refresh_token"),
+            "expires_in": token_info.get("expires_in"),
+            "user": {
+                "id": user_info.get("id"),
+                "display_name": user_info.get("display_name"),
+                "email": user_info.get("email"),
+                "profile_url": user_info.get("external_urls", {}).get("spotify"),
+                "image": user_info.get("images")[0]["url"] if user_info.get("images") else None,
+            }
+        })
+
 
 class CreateSpotifyPlaylistView(APIView):
     permission_classes = [IsAuthenticated]
