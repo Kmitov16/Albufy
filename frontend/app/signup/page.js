@@ -3,7 +3,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Signup() {
-  const [formData, setFormData] = useState({ username: "", email: "", password: "" });
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState(null);
   const router = useRouter();
 
@@ -39,8 +43,12 @@ export default function Signup() {
   return (
     <div className="flex justify-center items-center h-screen bg-gradient-to-br from-green-600 to-black p-4">
       <div className="bg-black/80 border border-[#1a1a1a] p-8 rounded-xl shadow-lg w-80 text-white">
-        <h2 className="text-2xl font-bold mb-4 text-center">Create an account</h2>
-        {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
+        <h2 className="text-2xl font-bold mb-4 text-center">
+          Create an account
+        </h2>
+        {error && (
+          <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* Username input */}
@@ -50,10 +58,10 @@ export default function Signup() {
             placeholder="Username"
             value={formData.username}
             onChange={handleChange}
-            className="w-full p-2 mb-3 rounded bg-[#0e0e0e] text-white outline-none"
+            className="w-full p-2 mb-3 rounded bg-black/90 text-white outline-none"
             required
           />
-          
+
           {/* Email input */}
           <input
             type="email"
@@ -61,7 +69,7 @@ export default function Signup() {
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-2 mb-3 rounded bg-[#0e0e0e] text-white outline-none"
+            className="w-full p-2 mb-3 rounded bg-black/90 text-white outline-none"
             required
           />
 
@@ -72,7 +80,7 @@ export default function Signup() {
             placeholder="Password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-2 mb-3 rounded bg-[#0e0e0e] text-white outline-none"
+            className="w-full p-2 mb-3 rounded bg-black/90 text-white outline-none"
             required
           />
 
@@ -80,7 +88,7 @@ export default function Signup() {
           <div className="flex justify-center">
             <button
               type="submit"
-              className="w-40 cursor-pointer bg-[#181818] p-2 rounded-xl hover:bg-[#292929] transition text-white"
+              className="w-40 cursor-pointer bg-black p-2 rounded-xl hover:bg-black/30 transition duration-300 text-white"
             >
               Sign Up
             </button>

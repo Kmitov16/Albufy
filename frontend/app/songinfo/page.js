@@ -9,6 +9,42 @@ export default function SpotifySearch() {
   const [selectedSongs, setSelectedSongs] = useState(new Set());
   const [accessToken, setAccessToken] = useState("");
 
+  async function handleButtonClick() {
+    if (selectedSongs.size === 0) {
+      console.log("No songs selected!");
+      return;
+    }
+
+    const selectedSongIds = Array.from(selectedSongs); // Convert Set to Array
+
+    // Prepare data for the request
+    const data = {
+      song_ids: selectedSongIds, // Send selected song IDs (or any other data you need)
+    };
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/playlist-request/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        }
+      );
+
+      const responseData = await response.json();
+      if (response.ok) {
+        console.log("Songs sent successfully:", responseData);
+      } else {
+        console.error("Error sending songs:", responseData);
+      }
+    } catch (error) {
+      console.error("Error in request:", error);
+    }
+  }
+
   // Fetch Access Token from Spotify
   async function getAccessToken() {
     const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
@@ -149,6 +185,7 @@ export default function SpotifySearch() {
                   ? "bg-green-600 text-white hover:bg-green-500 cursor-pointer"
                   : "bg-gray-500 text-gray-300 cursor-not-allowed"
               }`}
+              onClick={handleButtonClick}
               disabled={selectedSongs.size < 5}
             >
               Continue
