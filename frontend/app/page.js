@@ -1,18 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const checkLoginStatus = () => {
-      const accessToken = localStorage.getItem("access_token");
-      console.log("Token check:", accessToken); // Debugging log
-      setIsLoggedIn(accessToken !== null && accessToken !== ""); // Ensure it updates
-    };
-
-    checkLoginStatus(); // Run on mount
+    checkLoginStatus();
 
     // Listen for changes in localStorage
     const handleStorageChange = () => checkLoginStatus();
@@ -23,13 +19,27 @@ export default function Home() {
     };
   }, []);
 
+  // Check if user is authenticated
+  const checkLoginStatus = () => {
+    const jwtToken = localStorage.getItem("jwt_token");
+    setIsLoggedIn(!!jwtToken); // Convert to boolean
+  };
+
+  const handleStartNow = () => {
+    if (isLoggedIn) {
+      router.push("/albuminfo"); // Redirect to the actual page
+    } else {
+      router.push("/login"); // Redirect to login if not authenticated
+    }
+  };
+
   const handleLogout = () => {
     console.log("Logging out...");
 
     // Clear tokens
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
+    localStorage.removeItem("jwt_token");
+    localStorage.removeItem("spotify_access_token");
+    localStorage.removeItem("spotify_refresh_token");
 
     setIsLoggedIn(false); // Update state immediately
 
@@ -39,6 +49,7 @@ export default function Home() {
     window.location.href = `${SPOTIFY_LOGOUT_URL}?continue=${encodeURIComponent(
       REDIRECT_AFTER_LOGOUT
     )}`;
+    router.push("/login"); // Redirect to login page
   };
 
   return (
@@ -53,28 +64,22 @@ export default function Home() {
             Logout
           </button>
         ) : (
-          <>
-            <Link href="/login">
-              <button className="px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300">
-                Log in
-              </button>
-            </Link>
-            <Link href="https://accounts.spotify.com/en/signup" target="_blank">
-              <button className="px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300">
-                Sign up
-              </button>
-            </Link>
-          </>
+          <Link href="/login">
+            <button className="px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300">
+              Log in
+            </button>
+          </Link>
         )}
       </div>
 
       {/* Main Content */}
       <h1 className="text-3xl font-bold text-white">Welcome to Albufy</h1>
-      <Link href="/songinfo">
-        <button className="mt-4 px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300">
-          Start Now
-        </button>
-      </Link>
+      <button
+        onClick={handleStartNow}
+        className="mt-4 px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300"
+      >
+        Start Now
+      </button>
     </div>
   );
 }

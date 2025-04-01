@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import apiFetch from "@/app/apifetch";
 
 export default function PlaylistForm() {
   const [description, setDescription] = useState("");
@@ -18,13 +19,7 @@ export default function PlaylistForm() {
     e.preventDefault();
     setLoading(true);
 
-    const authToken = localStorage.getItem("access"); // User authentication token
-    if (!authToken) {
-      console.error("User is not authenticated.");
-      setLoading(false);
-      return;
-    }
-
+    const authToken = localStorage.getItem("access"); // Get the access token from local storage
     // Prepare request body
     const data = {
       song_ids: finalPlaylist, // Send the selected song IDs
@@ -32,7 +27,7 @@ export default function PlaylistForm() {
     };
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/playlist-request/", {
+      const res = await apiFetch("http://127.0.0.1:8000/api/playlist-request/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -72,10 +67,8 @@ export default function PlaylistForm() {
           />
           <button
             type="submit"
-            disabled={loading}
             className="w-full px-6 cursor-pointer py-3 bg-green-700 text-white rounded-lg hover:bg-green-600 transition duration-300 disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Generate Playlist"}
           </button>
         </form>
 

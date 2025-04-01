@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import apiFetch from "@/app/apifetch";
 
 export default function SpotifySearch() {
   const [query, setQuery] = useState("");
@@ -18,11 +19,6 @@ export default function SpotifySearch() {
     const selectedSongIds = Array.from(selectedSongs);
     const authToken = localStorage.getItem("access");
   
-    if (!authToken) {
-      console.error("No authentication token found!");
-      return;
-    }
-  
     const description = localStorage.getItem("playlist_description"); // Store this from the description page
   
     if (!description) {
@@ -37,7 +33,7 @@ export default function SpotifySearch() {
     };
   
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/playlist-request/", {
+      const response = await apiFetch("http://127.0.0.1:8000/api/playlist-request/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
