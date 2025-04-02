@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -8,22 +7,26 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    const checkLoginStatus = () => {
+      const accessToken = localStorage.getItem("access");
+      const refreshToken = localStorage.getItem("refresh");
+      if (!accessToken || !refreshToken) {
+        router.push("/login"); // Redirect if not authenticated
+      } else {
+        setIsLoggedIn(true);
+      }
+    };
+
     checkLoginStatus();
 
-    // Listen for changes in localStorage
+    // Listen for logout changes (e.g., logout from another tab)
     const handleStorageChange = () => checkLoginStatus();
     window.addEventListener("storage", handleStorageChange);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, []);
-
-  // Check if user is authenticated
-  const checkLoginStatus = () => {
-    const jwtToken = localStorage.getItem("jwt_token");
-    setIsLoggedIn(!!jwtToken); // Convert to boolean
-  };
+  }, [router]);
 
   const handleStartNow = () => {
     if (isLoggedIn) {
@@ -49,7 +52,7 @@ export default function Home() {
     window.location.href = `${SPOTIFY_LOGOUT_URL}?continue=${encodeURIComponent(
       REDIRECT_AFTER_LOGOUT
     )}`;
-    router.push("/login"); // Redirect to login page
+    router.push("/login");
   };
 
   return (
@@ -64,21 +67,27 @@ export default function Home() {
             Logout
           </button>
         ) : (
-          <Link href="/login">
-            <button className="px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300">
-              Log in
-            </button>
-          </Link>
+          <button
+            onClick={() => router.push("/login")}
+            className="px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300"
+          >
+            Log in
+          </button>
         )}
       </div>
 
       {/* Main Content */}
       <h1 className="text-3xl font-bold text-white">Welcome to Albufy</h1>
-      <Link href="/action">
-        <button className="mt-4 px-6 py-3 cursor-pointer bg-green-600 text-white rounded-3xl hover:bg-green-500 transition duration-300">
-          Start Now
-        </button>
-      </Link>
+      <button
+        onClick={handleStartNow}
+        className={`mt-4 px-6 py-3 cursor-pointer rounded-3xl transition duration-300 ${
+          isLoggedIn
+            ? "bg-green-600 text-white hover:bg-green-500"
+            : "bg-gray-500 text-gray-300 cursor-not-allowed"
+        }`}
+      >
+        Start Now
+      </button>
     </div>
   );
 }

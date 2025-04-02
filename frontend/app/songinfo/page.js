@@ -37,7 +37,6 @@ export default function SpotifySearch() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(data),
       });

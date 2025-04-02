@@ -7,7 +7,6 @@ export default function Login() {
   const router = useRouter();
   const [error, setError] = useState(null);
 
-  // Function to initiate the Spotify login process
   const handleSpotifyLogin = () => {
     const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
     const redirectUri = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
@@ -21,32 +20,28 @@ export default function Login() {
     window.location.href = authUrl;
   };
 
-  // This hook is used to handle the Spotify callback once user is redirected back
   useEffect(() => {
     async function fetchToken() {
       const code = new URLSearchParams(window.location.search).get("code");
       if (!code) return;
 
       try {
-        // Send the code to the backend to get the access token and JWT token
-        const res = await fetch(
-          `http://localhost:8000/api/spotify-callback/?code=${code}`
-        );
+        const res = await fetch("http://localhost:8000/api/spotify-login/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+        
         const data = await res.json();
 
-        // Check if the response contains an access token and store it
-        if (data.access_token && data.jwt_token) {
-          // Store the tokens and user info in localStorage
-          localStorage.setItem("access_token", data.access_token);
-          localStorage.setItem("refresh_token", data.refresh_token);
-          localStorage.setItem("jwt_token", data.jwt_token);
-          localStorage.setItem("user", JSON.stringify(data.user));
+        if (res.ok) {
+          localStorage.setItem("access", data.jwt_access);
+          localStorage.setItem("spotify_access_token", data.spotify_access_token);
+          localStorage.setItem("spotify_refresh_token", data.spotify_refresh_token);
 
-          // Redirect to the dashboard (or any other page after successful login)
-          router.push("/");
+          router.push("/"); // Redirect to dashboard after login
         } else {
-          // If the tokens are not present in the response, show error
-          setError("Failed to authenticate with Spotify");
+          setError(data.error || "Failed to authenticate with Spotify");
         }
       } catch (err) {
         console.error("OAuth Error:", err);
@@ -60,8 +55,9 @@ export default function Login() {
   return (
     <div className="flex justify-center items-center h-screen bg-gradient-to-br from-green-600 to-black p-4">
       <div className="bg-black/80 border border-[#1a1a1a] p-8 rounded-xl shadow-lg w-80 text-white">
-        <h2 className="text-2xl font-bold mb-4 text-center">Log in with Spotify</h2>
-        
+        <h2 className="text-2xl font-bold mb-4 text-center">
+          Log in with Spotify
+        </h2>
         {error && (
           <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
         )}

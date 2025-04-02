@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://127.0.0.1:8000/auth";
 
 let isRefreshing = false;
 let refreshSubscribers = [];
@@ -43,7 +43,7 @@ export default async function apiFetch(url, options = {}) {
           }
 
           const { access } = await refreshResponse.json();
-          localStorage.setItem("accessToken", access);
+          localStorage.setItem("access", access);
           onRefreshed(access);
 
           // Retry original request with new token
