@@ -30,7 +30,7 @@ export default function Home() {
 
   const handleStartNow = () => {
     if (isLoggedIn) {
-      router.push("/albuminfo"); // Redirect to the actual page
+      router.push("/action"); // Redirect to the actual page
     } else {
       router.push("/login"); // Redirect to login if not authenticated
     }
@@ -40,9 +40,8 @@ export default function Home() {
     console.log("Logging out...");
 
     // Clear tokens
-    localStorage.removeItem("jwt_token");
-    localStorage.removeItem("spotify_access_token");
-    localStorage.removeItem("spotify_refresh_token");
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
 
     setIsLoggedIn(false); // Update state immediately
 

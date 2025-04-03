@@ -27,6 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+from datetime import timedelta
+
+# SECURITY WARNING: update this to your actual frontend domain
+FRONTEND_URL = "http://localhost:3000"
 
 # Application definition
 
@@ -55,10 +59,32 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Allow frontend to communicate with backend
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins (for development)
+
+# If using credentials (cookies, JWTs), allow credentials
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Setup for Secure API Requests
+CSRF_TRUSTED_ORIGINS = [FRONTEND_URL]
+
+# REST Framework JWT Authentication Settings
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
+
+# JWT Settings (Change for Production)
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 CORS_ALLOW_ALL_ORIGINS = True  # Change this in production

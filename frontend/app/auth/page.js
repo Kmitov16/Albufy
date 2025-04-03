@@ -1,47 +1,50 @@
 "use client";
 
-import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SpotifyCallback() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function fetchAccessToken() {
-      const code = new URLSearchParams(window.location.search).get("code");
-      if (!code) {
-        console.error("No authorization code found!");
-        return;
-      }
+    async function fetchToken() {
+      const code = searchParams.get("code");
+      if (!code) return;
 
       try {
-        const response = await fetch(
-          `http://localhost:8000/api/spotify-callback/?code=${code}`
-        );
-        const data = await response.json();
+        const res = await fetch("http://127.0.0.1:8000/api/spotify-callback/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
 
-        if (data.access_token) {
-          // Store token & user info in localStorage
-          localStorage.setItem("access_token", data.access_token);
-          localStorage.setItem("refresh_token", data.refresh_token);
-          localStorage.setItem("user", JSON.stringify(data.user));
+        const data = await res.json();
 
-          // Redirect to homepage
-          router.push("/");
+        if (res.ok) {
+          localStorage.setItem("access", data.jwt_access_token);
+          localStorage.setItem("refresh", data.jwt_refresh_token);
+          localStorage.setItem("spotify_access_token", data.spotify_access_token);
+          localStorage.setItem("spotify_refresh_token", data.spotify_refresh_token);
+
+          router.push("/"); // Redirect after login
         } else {
-          console.error("Failed to retrieve access token");
+          setError(data.error || "Authentication failed");
         }
-      } catch (error) {
-        console.error("OAuth Error:", error);
+      } catch (err) {
+        console.error("OAuth Error:", err);
+        setError("Something went wrong");
       }
     }
 
-    fetchAccessToken();
+    fetchToken();
   }, [router]);
 
   return (
-    <div className="text-white text-center mt-10">
-      <h1>Logging in...</h1>
+    <div className="flex justify-center items-center h-screen bg-black text-white">
+      <h2>Logging in...</h2>
+      {error && <p className="text-red-500">{error}</p>}
     </div>
   );
 }

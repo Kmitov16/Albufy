@@ -1,5 +1,6 @@
 import requests
 import os
+from dotenv import load_dotenv
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -12,13 +13,18 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import CreateAPIView, ListAPIView
 from .models import PlaylistRequest
 from .serializers import PlaylistRequestSerializer
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
 
-SPOTIFY_CLIENT_SECRET = os.getenv("NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET")
-SPOTIFY_CLIENT_ID = os.getenv("NEXT_PUBLIC_SPOTIFY_CLIENT_ID")
+load_dotenv()
+
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1/"
+SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
 
 class SpotifyLoginView(APIView):
     """Generates the Spotify login URL."""
@@ -38,11 +44,15 @@ class SpotifyAuthCallback(APIView):
     """Handles Spotify OAuth callback & user authentication."""
     permission_classes = [AllowAny]
 
-    def get(self, request):
-        code = request.GET.get("code")
+    def post(self, request):  # Allow POST requests
+        code = request.data.get("code")  # Get code from request body
         if not code:
             return Response({"error": "Authorization code missing"}, status=400)
 
+        return self.handle_authentication(code)
+
+    def handle_authentication(self, code):
+        """Common method to handle token exchange and user authentication."""
         # Exchange authorization code for tokens
         token_data = self.exchange_code_for_tokens(code)
         if "access_token" not in token_data:
@@ -77,18 +87,22 @@ class SpotifyAuthCallback(APIView):
             "refresh": jwt_refresh_token,
         })
 
+
     def exchange_code_for_tokens(self, code):
         """Exchanges authorization code for Spotify access/refresh tokens."""
         payload = {
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": settings.SPOTIFY_REDIRECT_URI,
+            "redirect_uri": SPOTIFY_REDIRECT_URI,
             "client_id": SPOTIFY_CLIENT_ID,
             "client_secret": SPOTIFY_CLIENT_SECRET,
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         response = requests.post(SPOTIFY_TOKEN_URL, data=payload, headers=headers)
-        return response.json()
+        token_data = response.json()
+
+        print("Spotify Token Response:", token_data)  # Debugging log
+        return token_data
 
     def get_spotify_user(self, access_token):
         """Fetches Spotify user profile using access token."""
@@ -98,7 +112,7 @@ class SpotifyAuthCallback(APIView):
 
 
 class SpotifyAuthView(APIView):
-    """Alternative endpoint for Spotify authentication via POST request."""
+    """Handles Spotify authentication and issues JWT tokens."""
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -106,6 +120,7 @@ class SpotifyAuthView(APIView):
         if not code:
             return Response({"error": "Authorization code is required"}, status=400)
 
+        # Exchange authorization code for Spotify tokens
         token_data = self.exchange_code_for_tokens(code)
         if "access_token" not in token_data:
             return Response({"error": "Failed to retrieve access token"}, status=400)
@@ -113,43 +128,31 @@ class SpotifyAuthView(APIView):
         access_token = token_data["access_token"]
         refresh_token = token_data.get("refresh_token")
 
+        # Fetch user data from Spotify
         user_data = self.get_spotify_user(access_token)
         if "id" not in user_data:
             return Response({"error": "Failed to retrieve Spotify user info"}, status=400)
 
+        # Create or get user
         user, created = User.objects.get_or_create(
             username=user_data["id"],
             defaults={"email": user_data.get("email", "")}
         )
 
-        # Generate JWT tokens for Django authentication
+        # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
+        jwt_access_token = str(refresh.access_token)
+        jwt_refresh_token = str(refresh)
 
+        # Return tokens in JSON response (instead of setting HTTP-only cookies)
         return Response({
-            "jwt_access": str(refresh.access_token),
-            "jwt_refresh": str(refresh),
             "spotify_access_token": access_token,
             "spotify_refresh_token": refresh_token,
+            "user": {"username": user.username, "email": user.email},
+            "access": jwt_access_token,
+            "refresh": jwt_refresh_token,
         })
 
-    def exchange_code_for_tokens(self, code):
-        """Exchanges authorization code for Spotify access/refresh tokens."""
-        payload = {
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": settings.SPOTIFY_REDIRECT_URI,
-            "client_id": SPOTIFY_CLIENT_ID,
-            "client_secret": SPOTIFY_CLIENT_SECRET,
-        }
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(SPOTIFY_TOKEN_URL, data=payload, headers=headers)
-        return response.json()
-
-    def get_spotify_user(self, access_token):
-        """Fetches Spotify user profile using access token."""
-        headers = {"Authorization": f"Bearer {access_token}"}
-        response = requests.get(f"{SPOTIFY_API_BASE_URL}me", headers=headers)
-        return response.json()
 
 
 class CreateSpotifyPlaylistView(APIView):

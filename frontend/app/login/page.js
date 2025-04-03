@@ -20,38 +20,6 @@ export default function Login() {
     window.location.href = authUrl;
   };
 
-  useEffect(() => {
-    async function fetchToken() {
-      const code = new URLSearchParams(window.location.search).get("code");
-      if (!code) return;
-
-      try {
-        const res = await fetch("http://localhost:8000/api/spotify-login/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
-        });
-        
-        const data = await res.json();
-
-        if (res.ok) {
-          localStorage.setItem("access", data.jwt_access);
-          localStorage.setItem("spotify_access_token", data.spotify_access_token);
-          localStorage.setItem("spotify_refresh_token", data.spotify_refresh_token);
-
-          router.push("/"); // Redirect to dashboard after login
-        } else {
-          setError(data.error || "Failed to authenticate with Spotify");
-        }
-      } catch (err) {
-        console.error("OAuth Error:", err);
-        setError("Something went wrong");
-      }
-    }
-
-    fetchToken();
-  }, [router]);
-
   return (
     <div className="flex justify-center items-center h-screen bg-gradient-to-br from-green-600 to-black p-4">
       <div className="bg-black/80 border border-[#1a1a1a] p-8 rounded-xl shadow-lg w-80 text-white">
