@@ -17,39 +17,8 @@ export default function SpotifySearch() {
     }
   
     const selectedSongIds = Array.from(selectedSongs);
-    const authToken = localStorage.getItem("access");
-  
-    const description = localStorage.getItem("playlist_description"); // Store this from the description page
-  
-    if (!description) {
-      console.error("No description found!");
-      return;
-    }
-  
-    // Prepare data for request
-    const data = {
-      song_ids: selectedSongIds,
-      description: description,
-    };
-  
-    try {
-      const response = await apiFetch("http://127.0.0.1:8000/api/playlist-request/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-  
-      const responseData = await response.json();
-      if (response.ok) {
-        console.log("Songs and description sent successfully:", responseData);
-      } else {
-        console.error("Error sending data:", responseData);
-      }
-    } catch (error) {
-      console.error("Error in request:", error);
-    }
+    localStorage.setItem("selected_song_ids", JSON.stringify(selectedSongIds));
+    console.log("Selected songs stored in localStorage:", selectedSongIds);
   }
   
 

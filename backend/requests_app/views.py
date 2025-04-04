@@ -160,7 +160,7 @@ class CreateSpotifyPlaylistView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        access_token = request.data.get("access_token")
+        access_token = request.data.get("access")
         name = request.data.get("name")
         track_ids = request.data.get("track_ids")
 
@@ -198,25 +198,59 @@ class CreateSpotifyPlaylistView(APIView):
 
         return playlist_id
 
-
 class PlaylistRequestView(CreateAPIView):
     """Handles playlist request creation and OpenAI recommendations."""
     queryset = PlaylistRequest.objects.all()
     serializer_class = PlaylistRequestSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        song_ids = request.data.get("song_ids")
+        description = request.data.get("description")
+        playlist_request = PlaylistRequest.objects.create(
+            user=request.user,
+            song_ids=song_ids,
+            description=description
+        )
+        playlist_request.save()
+        serializer = self.get_serializer(playlist_request)
+        
+        return self.perform_create(serializer)
 
     def perform_create(self, serializer):
+        # Save the initial request (user-picked songs and description)
         playlist_request = serializer.save(user=self.request.user)
-        recommendations = self.generate_recommendations(playlist_request.song_ids, playlist_request.description)
-        final_playlist = playlist_request.song_ids + recommendations[:15]  
+
+        # Generate recommendations based on input
+        recommendations = self.generate_recommendations(
+            playlist_request.song_ids,
+            playlist_request.description
+        )
+
+        # Combine selected + recommended (max 15 recommendations)
+        final_playlist = playlist_request.song_ids + recommendations[:15]
         playlist_request.song_ids = final_playlist
         playlist_request.save()
 
     def generate_recommendations(self, song_ids, description):
         song_list = ", ".join(song_ids)
-        prompt = f"User selected: {song_list}. They want this vibe: {description}. Recommend 15 more songs."
-        response = openai.ChatCompletion.create(model="gpt-4", messages=[{"role": "user", "content": prompt}])
-        return response["choices"][0]["message"]["content"].split("\n")
+        prompt = (
+            f"The user picked these songs: {song_list}.\n"
+            f"They want this vibe: '{description}'.\n"
+            f"Recommend 15 more Spotify songs (song name and artist) considering the given description and songs. Return one per line."
+        )
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        recommendations_text = response["choices"][0]["message"]["content"]
+        recommended_songs = [
+            line.strip() for line in recommendations_text.split("\n") if line.strip()
+        ]
+
+        return recommended_songs
 
 
 class PlaylistListView(ListAPIView):

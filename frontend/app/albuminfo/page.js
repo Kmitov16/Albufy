@@ -6,12 +6,14 @@ export default function PlaylistForm() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [finalPlaylist, setFinalPlaylist] = useState([]);
+  const [selectedSongIds, setSelectedSongIds] = useState([]);
 
   useEffect(() => {
-    // Fetch selected songs from local storage (set in the previous step)
-    const storedSongs = localStorage.getItem("selected_songs");
+    // Get selected songs from localStorage
+    const storedSongs = localStorage.getItem("selected_song_ids");
     if (storedSongs) {
-      setFinalPlaylist(JSON.parse(storedSongs));
+      const parsedSongs = JSON.parse(storedSongs);
+      setSelectedSongIds(parsedSongs);
     }
   }, []);
 
@@ -19,11 +21,16 @@ export default function PlaylistForm() {
     e.preventDefault();
     setLoading(true);
 
-    const authToken = localStorage.getItem("access"); // Get the access token from local storage
-    // Prepare request body
+    const accessToken = localStorage.getItem("access");
+    if (!accessToken) {
+      console.error("No access token available!");
+      setLoading(false);
+      return;
+    }
+
     const data = {
-      song_ids: finalPlaylist, // Send the selected song IDs
-      description: description, // Send the description
+      song_ids: selectedSongIds,
+      description: description,
     };
 
     try {
@@ -31,6 +38,7 @@ export default function PlaylistForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(data),
       });
@@ -38,7 +46,7 @@ export default function PlaylistForm() {
       const responseData = await res.json();
       if (res.ok) {
         console.log("Generated Playlist:", responseData.song_ids);
-        setFinalPlaylist(responseData.song_ids); // Store AI-generated playlist
+        setFinalPlaylist(responseData.song_ids); // Show the generated playlist
       } else {
         console.error("Error generating playlist:", responseData);
       }
@@ -46,6 +54,7 @@ export default function PlaylistForm() {
       console.error("Request failed:", error);
     }
 
+    localStorage.removeItem("selected_song_ids"); // Clear selected songs from localStorage
     setLoading(false);
   };
 
@@ -67,7 +76,9 @@ export default function PlaylistForm() {
           <button
             type="submit"
             className="w-full px-6 cursor-pointer py-3 bg-green-700 text-white rounded-lg hover:bg-green-600 transition duration-300 disabled:opacity-50"
+            disabled={loading || selectedSongIds.length !== 5 || !description}
           >
+            {loading ? "Generating..." : "Generate Playlist"}
           </button>
         </form>
 

@@ -9,86 +9,62 @@ const onRefreshed = (token) => {
 };
 
 export default async function apiFetch(url, options = {}) {
-  try {
-    const accessToken = localStorage.getItem("access");
-    if (!accessToken) {
-      throw new Error("No access token found");
-    }
+  const accessToken = localStorage.getItem("access");
+  const refreshToken = localStorage.getItem("refresh");
 
-    const response = await fetch(url, {
+  const attachAuthHeader = (token) => ({
+    ...options.headers,
+    Authorization: `Bearer ${token}`,
+  });
+
+  const makeRequest = async (token) =>
+    fetch(url, {
       ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: attachAuthHeader(token),
     });
 
-    if (response.status === 401) {
-      if (!isRefreshing) {
-        isRefreshing = true;
-        try {
-          const refreshToken = localStorage.getItem("refresh");
-          if (!refreshToken) {
-            throw new Error("No refresh token available");
-          }
+  try {
+    if (!accessToken) throw new Error("No access token found");
 
-          const refreshResponse = await fetch(`${API_URL}/token/refresh/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh: refreshToken }),
-          });
+    let response = await makeRequest(accessToken);
 
-          if (!refreshResponse.ok) {
-            throw new Error("Failed to refresh token");
-          }
+    if (response.status !== 401) return response;
 
-          const { access } = await refreshResponse.json();
-          localStorage.setItem("access", access);
-          onRefreshed(access);
+    // 401 means token is expired, try to refresh
+    if (!refreshToken) throw new Error("No refresh token available");
 
-          // Retry original request with new token
-          return fetch(url, {
-            ...options,
-            headers: {
-              ...options.headers,
-              Authorization: `Bearer ${access}`,
-            },
-          });
-        } catch (error) {
-          refreshSubscribers = [];
-          localStorage.removeItem("access");
-          localStorage.removeItem("refresh");
-          localStorage.removeItem("user");
+    if (!isRefreshing) {
+      isRefreshing = true;
 
-          // Store current path for redirect after login
-          const currentPath = window.location.pathname;
-          if (currentPath !== "/login") {
-            localStorage.setItem("redirectAfterLogin", currentPath);
-          }
-
-          window.location.href = "/login";
-          throw error;
-        } finally {
-          isRefreshing = false;
-        }
-      } else {
-        // Wait for the token refresh
-        const newToken = await new Promise((resolve) => {
-          refreshSubscribers.push(resolve);
+      try {
+        const refreshResponse = await fetch(`${API_URL}/token/refresh/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh: refreshToken }),
         });
 
-        // Retry the original request with new token
-        return fetch(url, {
-          ...options,
-          headers: {
-            ...options.headers,
-            Authorization: `Bearer ${newToken}`,
-          },
-        });
+        if (!refreshResponse.ok) throw new Error("Failed to refresh token");
+
+        const { access: newAccessToken } = await refreshResponse.json();
+        localStorage.setItem("access", newAccessToken);
+        onRefreshed(newAccessToken);
+
+        return makeRequest(newAccessToken); // Retry with new token
+      } catch (err) {
+        refreshSubscribers = [];
+        localStorage.clear();
+        window.location.href = "/login";
+        throw err;
+      } finally {
+        isRefreshing = false;
       }
+    } else {
+      // Wait for ongoing refresh
+      const newToken = await new Promise((resolve) =>
+        refreshSubscribers.push(resolve)
+      );
+      return makeRequest(newToken); // Retry with new token
     }
-
-    return response;
   } catch (error) {
     if (
       error.message.includes("No access token") ||
