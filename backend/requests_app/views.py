@@ -207,15 +207,13 @@ class PlaylistRequestView(CreateAPIView):
     def post(self, request):
         song_ids = request.data.get("song_ids")
         description = request.data.get("description")
-        playlist_request = PlaylistRequest.objects.create(
-            user=request.user,
-            song_ids=song_ids,
-            description=description
+        playlist_request = PlaylistRequestSerializer.objects.create(
+            song_ids=self.song_ids,
+            description=self.description
         )
         playlist_request.save()
-        serializer = self.get_serializer(playlist_request)
         
-        return self.perform_create(serializer)
+        return self.perform_create(playlist_request)
 
     def perform_create(self, serializer):
         # Save the initial request (user-picked songs and description)
